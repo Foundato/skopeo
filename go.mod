@@ -6,7 +6,8 @@ require (
 	github.com/containers/common v0.12.0
 	github.com/containers/image/v5 v5.4.4
 	github.com/containers/ocicrypt v1.0.2
-	github.com/containers/storage v1.20.1
+	github.com/containers/storage v1.20.2
+	github.com/containers/tar-diff v0.1.2
 	github.com/docker/docker v1.4.2-0.20191219165747-a9416c67da9f
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/go-check/check v0.0.0-20180628173108-788fd7840127
@@ -24,3 +25,6 @@ require (
 	go4.org v0.0.0-20190218023631-ce4c26f7be8e // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )
+
+// Temporary use the wip/deltas branch
+replace github.com/containers/image/v5 => github.com/alexlarsson/image/v5 v5.4.4-0.20200605130120-f3173d7e7fe7
