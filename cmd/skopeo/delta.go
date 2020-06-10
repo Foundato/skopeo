@@ -25,17 +25,20 @@ const MediaTypeDeltaConfig = "vnd.redhat.delta.config.v1+json"
 
 type deltaOptions struct {
 	global                  *globalOptions
-	image                   *imageOptions
+	srcImage                *imageOptions
+	destImage               *imageOptions
 	fallbackConfigMediatype bool
 	fallbackLayerMediatype  bool
 }
 
 func deltaCmd(global *globalOptions) *cobra.Command {
 	sharedFlags, sharedOpts := sharedImageFlags()
-	imageFlags, imageOpts := imageFlags(global, sharedOpts, "", "")
+	srcImageFlags, srcImageOpts := imageFlags(global, sharedOpts, "src-", "screds")
+	destImageFlags, destImageOpts := imageFlags(global, sharedOpts, "dest-", "dcreds")
 	opts := deltaOptions{
-		global: global,
-		image:  imageOpts,
+		global:    global,
+		srcImage:  srcImageOpts,
+		destImage: destImageOpts,
 	}
 
 	cmd := &cobra.Command{
@@ -48,7 +51,8 @@ func deltaCmd(global *globalOptions) *cobra.Command {
 	adjustUsage(cmd)
 	flags := cmd.Flags()
 	flags.AddFlagSet(&sharedFlags)
-	flags.AddFlagSet(&imageFlags)
+	flags.AddFlagSet(&srcImageFlags)
+	flags.AddFlagSet(&destImageFlags)
 	flags.BoolVar(&opts.fallbackConfigMediatype, "fallback-config-type", false, `Use OCI media-type for config instead of delta specific type`)
 	flags.BoolVar(&opts.fallbackLayerMediatype, "fallback-layer-type", false, `Use OCI layer media-type for tar-diff blobs instead of tar-diff media-type`)
 	return cmd
@@ -617,14 +621,19 @@ func (opts *deltaOptions) run(args []string, stdout io.Writer) (retErr error) {
 	ctx, cancel := opts.global.commandTimeoutContext()
 	defer cancel()
 
-	sys, err := opts.image.newSystemContext()
+	srcSys, err := opts.srcImage.newSystemContext()
 	if err != nil {
 		return err
 	}
 
-	cache := blobinfocache.DefaultCache(sys)
+	destSys, err := opts.srcImage.newSystemContext()
+	if err != nil {
+		return err
+	}
 
-	to, err := loadImgVersion(ctx, sys, imageNames[0])
+	cache := blobinfocache.DefaultCache(destSys)
+
+	to, err := loadImgVersion(ctx, destSys, imageNames[0])
 	if err != nil {
 		return err
 	}
@@ -642,13 +651,13 @@ func (opts *deltaOptions) run(args []string, stdout io.Writer) (retErr error) {
 		return fmt.Errorf("Destination does not support deltas")
 	}
 
-	deltaDestination, err := deltaIndexRef.NewImageDestination(ctx, sys)
+	deltaDestination, err := deltaIndexRef.NewImageDestination(ctx, destSys)
 	if err != nil {
 		return err
 	}
 	defer deltaDestination.Close()
 
-	from, err := loadImgVersion(ctx, sys, imageNames[1])
+	from, err := loadImgVersion(ctx, srcSys, imageNames[1])
 	if err != nil {
 		return err
 	}
@@ -658,7 +667,7 @@ func (opts *deltaOptions) run(args []string, stdout io.Writer) (retErr error) {
 		}
 	}()
 
-	updated, err := generateDeltas(ctx, sys, opts, to, from, deltaDestination, cache)
+	updated, err := generateDeltas(ctx, destSys, opts, to, from, deltaDestination, cache)
 	if err != nil {
 		return err
 	}
@@ -666,14 +675,14 @@ func (opts *deltaOptions) run(args []string, stdout io.Writer) (retErr error) {
 	if updated {
 		fmt.Printf("Updating delta manifest\n")
 
-		index, err := ensureDeltaIndex(ctx, sys, deltaIndexRef)
+		index, err := ensureDeltaIndex(ctx, destSys, deltaIndexRef)
 		if err != nil {
 			return err
 		}
 
 		for i := range to.Instances {
 			if to.Instances[i].DeltaManifest != nil {
-				err = addToDeltaIndex(ctx, sys, index, &to.Instances[i], deltaDestination)
+				err = addToDeltaIndex(ctx, destSys, index, &to.Instances[i], deltaDestination)
 				if err != nil {
 					return err
 				}
