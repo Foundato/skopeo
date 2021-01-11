@@ -9,8 +9,10 @@ require (
 	github.com/containers/storage v1.20.2
 	github.com/containers/tar-diff v0.1.2
 	github.com/docker/docker v1.4.2-0.20191219165747-a9416c67da9f
+	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/go-check/check v0.0.0-20180628173108-788fd7840127
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/opencontainers/image-tools v0.0.0-20170926011501-6d941547fa1d
@@ -27,8 +29,6 @@ require (
 )
 
 // Temporary use the wip/deltas branch
-replace github.com/containers/image/v5 => github.com/Foundato/image/v5 v5.4.5-0.20200605130120-f3173d7e7fe7
-replace github.com/containers/tar-diff => github.com/Foundato/tar-diff v0.1.2
+replace github.com/containers/image/v5 => github.com/Foundato/image/v5 v5.4.5-0.20210111131918-875ee8c148d8
 
-// Use fixed version of image-spec
-replace github.com/opencontainers/image-spec => github.com/Foundato/image-spec v1.0.2-0.20200206005212-79b036d80240
+replace github.com/containers/tar-diff => github.com/Foundato/tar-diff v0.1.2

@@ -37,7 +37,7 @@ func manifestOCI1FromComponents(config imgspecv1.Descriptor, src types.ImageSour
 	return &manifestOCI1{
 		src:        src,
 		configBlob: configBlob,
-		m:          manifest.OCI1FromComponents(config, layers),
+		m:          manifest.OCI1FromComponents(imgspecv1.MediaTypeImageManifest, config, layers),
 	}
 }
 

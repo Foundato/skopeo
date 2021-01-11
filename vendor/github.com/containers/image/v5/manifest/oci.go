@@ -25,10 +25,28 @@ func BlobInfoFromOCI1Descriptor(desc imgspecv1.Descriptor) types.BlobInfo {
 	}
 }
 
+// Manifest provides `application/vnd.oci.image.manifest.v1+json` mediatype structure when marshalled to JSON.
+type manifest struct {
+	specs.Versioned
+
+	// MediaType is the media type of the object this schema refers to.
+	MediaType string `json:"mediaType"`
+
+	// Config references a configuration object for a container, by digest.
+	// The referenced configuration object is a JSON blob that the runtime uses to set up the container.
+	Config imgspecv1.Descriptor `json:"config"`
+
+	// Layers is an indexed list of layers referenced by the manifest.
+	Layers []imgspecv1.Descriptor `json:"layers"`
+
+	// Annotations contains arbitrary metadata for the image manifest.
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
 // OCI1 is a manifest.Manifest implementation for OCI images.
 // The underlying data from imgspecv1.Manifest is also available.
 type OCI1 struct {
-	imgspecv1.Manifest
+	manifest
 }
 
 const (
@@ -63,10 +81,11 @@ func OCI1FromManifest(manifest []byte) (*OCI1, error) {
 }
 
 // OCI1FromComponents creates an OCI1 manifest instance from the supplied data.
-func OCI1FromComponents(config imgspecv1.Descriptor, layers []imgspecv1.Descriptor) *OCI1 {
+func OCI1FromComponents(mediaType string, config imgspecv1.Descriptor, layers []imgspecv1.Descriptor) *OCI1 {
 	return &OCI1{
-		imgspecv1.Manifest{
+		manifest{
 			Versioned: specs.Versioned{SchemaVersion: 2},
+			MediaType: mediaType,
 			Config:    config,
 			Layers:    layers,
 		},
@@ -76,7 +95,7 @@ func OCI1FromComponents(config imgspecv1.Descriptor, layers []imgspecv1.Descript
 // OCI1Clone creates a copy of the supplied OCI1 manifest.
 func OCI1Clone(src *OCI1) *OCI1 {
 	return &OCI1{
-		Manifest: src.Manifest,
+		manifest: src.manifest,
 	}
 }
 

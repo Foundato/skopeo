@@ -14,14 +14,12 @@ import (
 	"github.com/containers/image/v5/pkg/blobinfocache"
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/image/v5/types"
-	"github.com/containers/tar-diff/pkg/tar-diff"
-	digest "github.com/opencontainers/go-digest"
-	"github.com/opencontainers/image-spec/specs-go/v1"
+	tardiff "github.com/containers/tar-diff/pkg/tar-diff"
+	"github.com/opencontainers/go-digest"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
-
-const MediaTypeDeltaConfig = "vnd.redhat.delta.config.v1+json"
 
 type deltaOptions struct {
 	global                  *globalOptions
@@ -104,7 +102,7 @@ func generateDeltaFile(ctx context.Context, toImg types.ImageSource, toLayer typ
 	// We unlink the tmpfiles, so we're guaranteed cleanup even if we exit early
 	os.Remove(delta.Name())
 
-	err = tar_diff.Diff(fromTmp, toTmp, delta, nil)
+	err = tardiff.Diff(fromTmp, toTmp, delta, nil)
 	if err != nil {
 		delta.Close()
 		return nil, err
@@ -472,7 +470,7 @@ func ensureDeltaManifest(ctx context.Context, sys *types.SystemContext, opts *de
 		return deltaManifest, nil
 	}
 
-	mediaType := MediaTypeDeltaConfig
+	mediaType := v1.MediaTypeImageConfig
 	configBytes := []byte("{}")
 	if opts.fallbackConfigMediatype {
 		// Used when e.g. target doesn't support OCI artifacts
@@ -498,6 +496,7 @@ func ensureDeltaManifest(ctx context.Context, sys *types.SystemContext, opts *de
 	configInfo, err := deltaDestination.PutBlob(ctx, bytes.NewReader(configBytes), types.BlobInfo{Digest: configDigest, Size: int64(len(configBytes))}, cache, true)
 
 	m := manifest.OCI1FromComponents(
+		v1.MediaTypeImageManifest,
 		v1.Descriptor{
 			MediaType: mediaType,
 			Digest:    configInfo.Digest,
