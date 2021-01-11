@@ -27,4 +27,8 @@ require (
 )
 
 // Temporary use the wip/deltas branch
-replace github.com/containers/image/v5 => github.com/alexlarsson/image/v5 v5.4.4-0.20200605130120-f3173d7e7fe7
+replace github.com/containers/image/v5 => github.com/Foundato/image/v5 v5.4.5-0.20200605130120-f3173d7e7fe7
+replace github.com/containers/tar-diff => github.com/Foundato/tar-diff v0.1.2
+
+// Use fixed version of image-spec
+replace github.com/opencontainers/image-spec => github.com/Foundato/image-spec v1.0.2-0.20200206005212-79b036d80240
