@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/containers/common/pkg/retry"
 	"github.com/containers/image/v5/pkg/compression"
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/image/v5/types"
@@ -56,6 +57,7 @@ type dockerImageOptions struct {
 	shared         *sharedImageOptions // May be shared across several imageOptions instances.
 	authFilePath   optionalString      // Path to a */containers/auth.json (prefixed version to override shared image option).
 	credsOption    optionalString      // username[:password] for accessing a registry
+	registryToken  optionalString      // token to be used directly as a Bearer token when accessing the registry
 	dockerCertPath string              // A directory using Docker-like *.{crt,cert,key} files for connecting to a registry or a daemon
 	tlsVerify      optionalBool        // Require HTTPS and verify certificates (for docker: and docker-daemon:)
 	noCreds        bool                // Access the registry anonymously
@@ -91,6 +93,7 @@ func dockerImageFlags(global *globalOptions, shared *sharedImageOptions, flagPre
 		f := fs.VarPF(newOptionalStringValue(&flags.credsOption), credsOptionAlias, "", "Use `USERNAME[:PASSWORD]` for accessing the registry")
 		f.Hidden = true
 	}
+	fs.Var(newOptionalStringValue(&flags.registryToken), flagPrefix+"registry-token", "Provide a Bearer token for accessing the registry")
 	fs.StringVar(&flags.dockerCertPath, flagPrefix+"cert-dir", "", "use certificates at `PATH` (*.crt, *.cert, *.key) to connect to the registry or daemon")
 	optionalBoolFlag(&fs, &flags.tlsVerify, flagPrefix+"tls-verify", "require HTTPS and verify certificates when talking to the container registry or daemon (defaults to true)")
 	fs.BoolVar(&flags.noCreds, flagPrefix+"no-creds", false, "Access the registry anonymously")
@@ -106,6 +109,17 @@ func imageFlags(global *globalOptions, shared *sharedImageOptions, flagPrefix, c
 	fs.StringVar(&opts.dockerDaemonHost, flagPrefix+"daemon-host", "", "use docker daemon host at `HOST` (docker-daemon: only)")
 	fs.AddFlagSet(&dockerFlags)
 	return fs, opts
+}
+
+type retryOptions struct {
+	maxRetry int // The number of times to possibly retry
+}
+
+func retryFlags() (pflag.FlagSet, *retry.RetryOptions) {
+	opts := retry.RetryOptions{}
+	fs := pflag.FlagSet{}
+	fs.IntVar(&opts.MaxRetry, "retry-times", 0, "the number of times to possibly retry")
+	return fs, &opts
 }
 
 // newSystemContext returns a *types.SystemContext corresponding to opts.
@@ -138,6 +152,9 @@ func (opts *imageOptions) newSystemContext() (*types.SystemContext, error) {
 			return nil, err
 		}
 	}
+	if opts.registryToken.present {
+		ctx.DockerBearerRegistryToken = opts.registryToken.value
+	}
 	if opts.noCreds {
 		ctx.DockerAuthConfig = &types.DockerAuthConfig{}
 	}
@@ -145,7 +162,7 @@ func (opts *imageOptions) newSystemContext() (*types.SystemContext, error) {
 	return ctx, nil
 }
 
-// imageDestOptions is a superset of imageOptions specialized for iamge destinations.
+// imageDestOptions is a superset of imageOptions specialized for image destinations.
 type imageDestOptions struct {
 	*imageOptions
 	dirForceCompression         bool        // Compress layers when saving to the dir: transport

@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/containers/common/pkg/retry"
 	"github.com/containers/image/v5/docker"
 	"github.com/containers/image/v5/docker/reference"
 	"github.com/containers/image/v5/transports/alltransports"
@@ -22,17 +23,20 @@ type tagListOutput struct {
 }
 
 type tagsOptions struct {
-	global *globalOptions
-	image  *imageOptions
+	global    *globalOptions
+	image     *imageOptions
+	retryOpts *retry.RetryOptions
 }
 
 func tagsCmd(global *globalOptions) *cobra.Command {
 	sharedFlags, sharedOpts := sharedImageFlags()
 	imageFlags, imageOpts := dockerImageFlags(global, sharedOpts, "", "")
+	retryFlags, retryOpts := retryFlags()
 
 	opts := tagsOptions{
-		global: global,
-		image:  imageOpts,
+		global:    global,
+		image:     imageOpts,
+		retryOpts: retryOpts,
 	}
 	cmd := &cobra.Command{
 		Use:   "list-tags [command options] REPOSITORY-NAME",
@@ -51,6 +55,7 @@ See skopeo-list-tags(1) section "REPOSITORY NAMES" for the expected format
 	flags := cmd.Flags()
 	flags.AddFlagSet(&sharedFlags)
 	flags.AddFlagSet(&imageFlags)
+	flags.AddFlagSet(&retryFlags)
 	return cmd
 }
 
@@ -118,8 +123,12 @@ func (opts *tagsOptions) run(args []string, stdout io.Writer) (retErr error) {
 		return err
 	}
 
-	repositoryName, tagListing, err := listDockerTags(ctx, sys, imgRef)
-	if err != nil {
+	var repositoryName string
+	var tagListing []string
+	if err = retry.RetryIfNecessary(ctx, func() error {
+		repositoryName, tagListing, err = listDockerTags(ctx, sys, imgRef)
+		return err
+	}, opts.retryOpts); err != nil {
 		return err
 	}
 

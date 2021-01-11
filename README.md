@@ -19,6 +19,7 @@ Skopeo works with API V2 container image registries such as [docker.io](https://
    For example you can copy images from one registry to another, without requiring privilege.
  * Inspecting a remote image showing its properties including its layers, without requiring you to pull the image to the host.
  * Deleting an image from an image repository.
+ * Syncing an external image repository to an internal registry for air-gapped deployments.
  * When required by the repository, skopeo can pass the appropriate credentials and certificates for authentication.
 
  Skopeo operates on the following image and repository types:
@@ -121,7 +122,7 @@ $ skopeo inspect --config docker://registry.fedoraproject.org/fedora:latest  | j
   ]
 }
 ```
-#### Show unverifed image's digest
+#### Show unverified image's digest
 ```console
 $ skopeo inspect docker://registry.fedoraproject.org/fedora:latest | jq '.Digest'
 "sha256:655721ff613ee766a4126cb5e0d5ae81598e1b0c3bcf7017c36c4d72cb092fe9"
@@ -136,7 +137,7 @@ $ skopeo inspect docker://registry.fedoraproject.org/fedora:latest | jq '.Digest
 
 * Container Storage backends
 
-  -  github.com/containers/storage (Backend for [Podman](https://podman.io), [CRI-O](https://cri-o.io), [Buildah](https://buildah.io) and friends)
+  -  [github.com/containers/storage](https://github.com/containers/storage) (Backend for [Podman](https://podman.io), [CRI-O](https://cri-o.io), [Buildah](https://buildah.io) and friends)
 
   -  Docker daemon storage
 
@@ -154,13 +155,18 @@ $ skopeo copy oci:busybox_ocilayout:latest dir:existingemptydirectory
 $ skopeo delete docker://localhost:5000/imagename:latest
 ```
 
+## Syncing registries
+```console
+$ skopeo sync --src docker --dest dir registry.example.com/busybox /media/usb
+```
+
 ## Authenticating to a registry
 
 #### Private registries with authentication
 skopeo uses credentials from the --creds (for skopeo inspect|delete) or --src-creds|--dest-creds (for skopeo copy) flags, if set; otherwise it uses configuration set by skopeo login, podman login, buildah login, or docker login.
 
 ```console
-$ skopeo login --user USER docker://myregistrydomain.com:5000
+$ skopeo login --username USER docker://myregistrydomain.com:5000
 Password:
 $ skopeo inspect docker://myregistrydomain.com:5000/busybox
 {"Tag":"latest","Digest":"sha256:473bb2189d7b913ed7187a33d11e743fdc2f88931122a44d91a301b64419f092","RepoTags":["latest"],"Comment":"","Created":"2016-01-15T18:06:41.282540103Z","ContainerConfig":{"Hostname":"aded96b43f48","Domainname":"","User":"","AttachStdin":false,"AttachStdout":false,"AttachStderr":false,"Tty":false,"OpenStdin":false,"StdinOnce":false,"Env":null,"Cmd":["/bin/sh","-c","#(nop) CMD [\"sh\"]"],"Image":"9e77fef7a1c9f989988c06620dabc4020c607885b959a2cbd7c2283c91da3e33","Volumes":null,"WorkingDir":"","Entrypoint":null,"OnBuild":null,"Labels":null},"DockerVersion":"1.8.3","Author":"","Config":{"Hostname":"aded96b43f48","Domainname":"","User":"","AttachStdin":false,"AttachStdout":false,"AttachStderr":false,"Tty":false,"OpenStdin":false,"StdinOnce":false,"Env":null,"Cmd":["sh"],"Image":"9e77fef7a1c9f989988c06620dabc4020c607885b959a2cbd7c2283c91da3e33","Volumes":null,"WorkingDir":"","Entrypoint":null,"OnBuild":null,"Labels":null},"Architecture":"amd64","Os":"linux"}
@@ -188,6 +194,20 @@ Contributing
 -
 
 Please read the [contribution guide](CONTRIBUTING.md) if you want to collaborate in the project.
+
+## Commands
+| Command                                            | Description                                                                                  |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------|
+| [skopeo-copy(1)](/docs/skopeo-copy.1.md)           | Copy an image (manifest, filesystem layers, signatures) from one location to another.        |
+| [skopeo-delete(1)](/docs/skopeo-delete.1.md)       | Mark the image-name for later deletion by the registry's garbage collector.                                                                |
+| [skopeo-inspect(1)](/docs/skopeo-inspect.1.md)     | Return  low-level  information about image-name in a registry.                                |
+| [skopeo-list-tags(1)](/docs/skopeo-list-tags.1.md) | Return a list of tags for the transport-specific image repository.                               |
+| [skopeo-login(1)](/docs/skopeo-login.1.md)         | Login to a container registry.                                                               |
+| [skopeo-logout(1)](/docs/skopeo-logout.1.md)       | Logout of a container registry.                                                              |
+| [skopeo-manifest-digest(1)](/docs/skopeo-manifest-digest.1.md)    | Compute a manifest digest for a manifest-file and write it to standard output.   |
+| [skopeo-standalone-sign(1)](/docs/skopeo-standalone-sign.1.md)    | Debugging tool - Publish and sign an image in one step.                                                         |
+| [skopeo-standalone-verify(1)](/docs/skopeo-standalone-verify.1.md)| Verify an image signature.                                                    |
+| [skopeo-sync(1)](/docs/skopeo-sync.1.md)           | Synchronize images between container registries and local directories.                       |
 
 License
 -

@@ -194,7 +194,7 @@ function expect_output() {
     fi
 
     # This is a multi-line message, which may in turn contain multi-line
-    # output, so let's format it ourself, readably
+    # output, so let's format it ourselves, readably
     local -a actual_split
     readarray -t actual_split <<<"$actual"
     printf "#/vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n" >&2
@@ -314,8 +314,7 @@ start_registry() {
         fi
 
         if ! egrep -q "^$testuser:" $AUTHDIR/htpasswd; then
-            log_and_run $PODMAN run --rm --entrypoint htpasswd $REGISTRY_FQIN \
-                   -Bbn $testuser $testpassword >> $AUTHDIR/htpasswd
+            htpasswd -Bbn $testuser $testpassword >> $AUTHDIR/htpasswd
         fi
 
         reg_args+=(
@@ -332,7 +331,8 @@ start_registry() {
             log_and_run openssl req -newkey rsa:4096 -nodes -sha256 \
                     -keyout $AUTHDIR/domain.key -x509 -days 2 \
                     -out $CERT \
-                    -subj "/C=US/ST=Foo/L=Bar/O=Red Hat, Inc./CN=localhost"
+                    -subj "/C=US/ST=Foo/L=Bar/O=Red Hat, Inc./CN=registry host certificate" \
+                    -addext subjectAltName=DNS:localhost
         fi
 
         reg_args+=(

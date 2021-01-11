@@ -16,10 +16,17 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-// GetDefaultAuthFile returns env value REGISTRY_AUTH_FILE as default --authfile path
-// used in multiple --authfile flag definitions
+// GetDefaultAuthFile returns env value REGISTRY_AUTH_FILE as default
+// --authfile path used in multiple --authfile flag definitions
+// Will fail over to DOCKER_CONFIG if REGISTRY_AUTH_FILE environment is not set
 func GetDefaultAuthFile() string {
-	return os.Getenv("REGISTRY_AUTH_FILE")
+	authfile := os.Getenv("REGISTRY_AUTH_FILE")
+	if authfile == "" {
+		if authfile, ok := os.LookupEnv("DOCKER_CONFIG"); ok {
+			logrus.Infof("Using DOCKER_CONFIG environment variable for authfile path %s", authfile)
+		}
+	}
+	return authfile
 }
 
 // CheckAuthFile validates filepath given by --authfile
@@ -40,8 +47,8 @@ func CheckAuthFile(authfile string) error {
 // data with the original parameter.
 func systemContextWithOptions(sys *types.SystemContext, authFile, certDir string) *types.SystemContext {
 	if sys != nil {
-		copy := *sys
-		sys = &copy
+		sysCopy := *sys
+		sys = &sysCopy
 	} else {
 		sys = &types.SystemContext{}
 	}
@@ -126,7 +133,7 @@ func Login(ctx context.Context, systemContext *types.SystemContext, opts *LoginO
 
 	if err = docker.CheckAuth(ctx, systemContext, username, password, server); err == nil {
 		// Write the new credentials to the authfile
-		if err = config.SetAuthentication(systemContext, server, username, password); err != nil {
+		if err := config.SetAuthentication(systemContext, server, username, password); err != nil {
 			return err
 		}
 	}
@@ -150,17 +157,13 @@ func getRegistryName(server string) string {
 	// gets the registry from the input. If the input is of the form
 	// quay.io/myuser/myimage, it will parse it and just return quay.io
 	split := strings.Split(server, "/")
-	if len(split) > 1 {
-		return split[0]
-	}
 	return split[0]
 }
 
 // getUserAndPass gets the username and password from STDIN if not given
 // using the -u and -p flags.  If the username prompt is left empty, the
 // displayed userFromAuthFile will be used instead.
-func getUserAndPass(opts *LoginOptions, password, userFromAuthFile string) (string, string, error) {
-	var err error
+func getUserAndPass(opts *LoginOptions, password, userFromAuthFile string) (user, pass string, err error) {
 	reader := bufio.NewReader(opts.Stdin)
 	username := opts.Username
 	if username == "" {
@@ -232,11 +235,20 @@ func Logout(systemContext *types.SystemContext, opts *LogoutOptions, args []stri
 	}
 
 	err = config.RemoveAuthentication(systemContext, server)
-	switch err {
+	switch errors.Cause(err) {
 	case nil:
 		fmt.Fprintf(opts.Stdout, "Removed login credentials for %s\n", server)
 		return nil
 	case config.ErrNotLoggedIn:
+		authConfig, err := config.GetCredentials(systemContext, server)
+		if err != nil {
+			return errors.Wrapf(err, "error reading auth file")
+		}
+		authInvalid := docker.CheckAuth(context.Background(), systemContext, authConfig.Username, authConfig.Password, server)
+		if authConfig.Username != "" && authConfig.Password != "" && authInvalid == nil {
+			fmt.Printf("Not logged into %s with current tool. Existing credentials were established via docker login. Please use docker logout instead.\n", server)
+			return nil
+		}
 		return errors.Errorf("Not logged into %s\n", server)
 	default:
 		return errors.Wrapf(err, "error logging out of %q", server)

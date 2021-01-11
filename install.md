@@ -1,76 +1,174 @@
 # Installing from packages
 
-`skopeo` may already be packaged in your distribution, for example on
-RHEL/CentOS ≥ 8 or Fedora you can install it using:
+## Distribution Packages
+`skopeo` may already be packaged in your distribution.
+
+### Fedora
 
 ```sh
-$ sudo dnf install skopeo
+sudo dnf -y install skopeo
 ```
 
-on RHEL/CentOS ≤ 7.x:
+### RHEL/CentOS ≥ 8 and CentOS Stream
 
 ```sh
-$ sudo yum install skopeo
+sudo dnf -y install skopeo
 ```
 
-for openSUSE:
+Newer Skopeo releases may be available on the repositories provided by the
+Kubic project. Beware, these may not be suitable for production environments.
+
+on CentOS 8:
 
 ```sh
-$ sudo zypper install skopeo
+sudo dnf -y module disable container-tools
+sudo dnf -y install 'dnf-command(copr)'
+sudo dnf -y copr enable rhcontainerbot/container-selinux
+sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8/devel:kubic:libcontainers:stable.repo
+sudo dnf -y install skopeo
 ```
 
-on alpine:
+on CentOS 8 Stream:
 
 ```sh
-$ sudo apk add skopeo
+sudo dnf -y module disable container-tools
+sudo dnf -y install 'dnf-command(copr)'
+sudo dnf -y copr enable rhcontainerbot/container-selinux
+sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8_Stream/devel:kubic:libcontainers:stable.repo
+sudo dnf -y install skopeo
 ```
 
-on macOS:
+### RHEL/CentOS ≤ 7.x
 
 ```sh
-$ brew install skopeo
+sudo yum -y install skopeo
 ```
 
-Debian (10 and newer including Raspbian) and Ubuntu (18.04 and newer): Packages
-are available via the [Kubic][0] project repositories:
+Newer Skopeo releases may be available on the repositories provided by the
+Kubic project. Beware, these may not be suitable for production environments.
 
-[0]: https://build.opensuse.org/project/show/devel:kubic:libcontainers:stable
+```sh
+sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_7/devel:kubic:libcontainers:stable.repo
+sudo yum -y install skopeo
+```
+
+### openSUSE
+
+```sh
+sudo zypper install skopeo
+```
+
+### Alpine
+
+```sh
+sudo apk add skopeo
+```
+
+### macOS
+
+```sh
+brew install skopeo
+```
+
+### Nix / NixOS
+```sh
+$ nix-env -i skopeo
+```
+
+### Debian
+
+The skopeo package is available in
+the [Bullseye (testing) branch](https://packages.debian.org/bullseye/skopeo), which
+will be the next stable release (Debian 11) as well as Debian Unstable/Sid.
 
 ```bash
-# Debian Unstable/Sid:
-$ echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Unstable/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-$ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Debian_Unstable/Release.key -O- | sudo apt-key add -
+# Debian Testing/Bullseye or Unstable/Sid
+sudo apt-get update
+sudo apt-get -y install skopeo
 ```
 
-```bash
-# Debian Testing:
-$ echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Testing/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-$ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Debian_Testing/Release.key -O- | sudo apt-key add -
-```
+If you would prefer newer (though not as well-tested) packages,
+the [Kubic project](https://build.opensuse.org/package/show/devel:kubic:libcontainers:stable/skopeo)
+provides packages for Debian 10 and newer. The packages in Kubic project repos are more frequently
+updated than the one in Debian's official repositories, due to how Debian works.
+The build sources for the Kubic packages can be found [here](https://gitlab.com/rhcontainerbot/skopeo/-/tree/debian/debian).
+
+CAUTION: On Debian 11 and newer, including Debian Testing and Sid, we highly recommend you use Buildah, Podman and Skopeo ONLY from EITHER the Kubic repo
+OR the official Debian repos. Mixing and matching may lead to unpredictable situations including installation conflicts.
 
 ```bash
-# Debian 10:
-$ echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-$ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Debian_10/Release.key -O- | sudo apt-key add -
+# Debian 10
+echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/Release.key | sudo apt-key add -
+sudo apt-get update
+sudo apt-get -y install skopeo
+
+# Debian Testing
+echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Testing/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Testing/Release.key | sudo apt-key add -
+sudo apt-get update
+sudo apt-get -y install skopeo
+
+# Debian Sid/Unstable
+echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Unstable/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Unstable/Release.key | sudo apt-key add -
+sudo apt-get update
+sudo apt-get -y install skopeo
 ```
 
-```bash
-# Raspbian 10:
-$ echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Raspbian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-$ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Raspbian_10/Release.key -O- | sudo apt-key add -
-```
+
+### Raspberry Pi OS armhf (ex Raspbian)
+
+The Kubic project provides packages for Raspbian 10.
 
 ```bash
-# Ubuntu (18.04, 19.04 and 19.10):
-$ . /etc/os-release
-$ sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/x${NAME}_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
-$ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/x${NAME}_${VERSION_ID}/Release.key -O- | sudo apt-key add -
+# Raspbian 10
+echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Raspbian_10/ /' | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Raspbian_10/Release.key | sudo apt-key add -
+sudo apt-get update -qq
+sudo apt-get -qq -y install skopeo
 ```
 
+
+### Raspberry Pi OS arm64 (beta)
+
+Raspberry Pi OS uses the standard Debian's repositories,
+so it is fully compatible with Debian's arm64 repository.
+You can simply follow the [steps for Debian](#debian) to install Skopeo.
+
+
+### Ubuntu
+
+The skopeo package is available in the official repositories for Ubuntu 20.10
+and newer.
+
 ```bash
-$ sudo apt-get update -qq
-$ sudo apt-get install skopeo
+# Ubuntu 20.10 and newer
+sudo apt-get -y update
+sudo apt-get -y install skopeo
 ```
+
+If you would prefer newer (though not as well-tested) packages,
+the [Kubic project](https://build.opensuse.org/package/show/devel:kubic:libcontainers:stable/skopeo)
+provides packages for active Ubuntu releases 18.04 and newer (it should also work with direct derivatives like Pop!\_OS).
+Checkout the [Kubic project page](https://build.opensuse.org/package/show/devel:kubic:libcontainers:stable/skopeo)
+for a list of supported Ubuntu version and
+architecture combinations. **NOTE:** The command `sudo apt-get -y upgrade`
+maybe required in some cases if Skopeo cannot be installed without it.
+The build sources for the Kubic packages can be found [here](https://gitlab.com/rhcontainerbot/skopeo/-/tree/debian/debian).
+
+CAUTION: On Ubuntu 20.10 and newer, we highly recommend you use Buildah, Podman and Skopeo ONLY from EITHER the Kubic repo
+OR the official Ubuntu repos. Mixing and matching may lead to unpredictable situations including installation conflicts.
+
+```bash
+. /etc/os-release
+echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key | sudo apt-key add -
+sudo apt-get update
+sudo apt-get -y upgrade
+sudo apt-get -y install skopeo
+```
+
 
 Otherwise, read on for building and installing it from source:
 
@@ -78,6 +176,8 @@ To build the `skopeo` binary you need at least Go 1.12.
 
 There are two ways to build skopeo: in a container, or locally without a
 container. Choose the one which better matches your needs and environment.
+
+## Building from Source
 
 ### Building without a container
 
@@ -92,49 +192,32 @@ Install the necessary dependencies:
 
 ```bash
 # Fedora:
-$ sudo dnf install gpgme-devel libassuan-devel btrfs-progs-devel device-mapper-devel
+sudo dnf install gpgme-devel libassuan-devel btrfs-progs-devel device-mapper-devel
 ```
 
 ```bash
 # Ubuntu (`libbtrfs-dev` requires Ubuntu 18.10 and above):
-$ sudo apt install libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev
+sudo apt install libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev
 ```
 
 ```bash
 # macOS:
-$ brew install gpgme
+brew install gpgme
 ```
 
 ```bash
 # openSUSE:
-$ sudo zypper install libgpgme-devel device-mapper-devel libbtrfs-devel glib2-devel
+sudo zypper install libgpgme-devel device-mapper-devel libbtrfs-devel glib2-devel
 ```
 
 Make sure to clone this repository in your `GOPATH` - otherwise compilation fails.
 
 ```bash
-$ git clone https://github.com/containers/skopeo $GOPATH/src/github.com/containers/skopeo
-$ cd $GOPATH/src/github.com/containers/skopeo && make binary-local
+git clone https://github.com/containers/skopeo $GOPATH/src/github.com/containers/skopeo
+cd $GOPATH/src/github.com/containers/skopeo && make bin/skopeo
 ```
 
-### Building in a container
-
-Building in a container is simpler, but more restrictive:
-
-- It requires the `podman` command and the ability to run Linux containers
-- The created executable is a Linux executable, and depends on dynamic libraries
-  which may only be available only in a container of a similar Linux
-  distribution.
-
-```bash
-$ make binary # Or (make all) to also build documentation, see below.
-```
-
-To build a pure-Go static binary (disables devicemapper, btrfs, and gpgme):
-
-```bash
-$ make binary-static DISABLE_CGO=1
-```
+By default the `make` command (make all) will build bin/skopeo and the documentation locally.
 
 ### Building documentation
 
@@ -142,18 +225,31 @@ To build the manual you will need go-md2man.
 
 ```bash
 # Debian:
-$ sudo apt-get install go-md2man
+sudo apt-get install go-md2man
 ```
 
 ```
 # Fedora:
-$ sudo dnf install go-md2man
+sudo dnf install go-md2man
 ```
 
 Then
 
 ```bash
-$ make docs
+make docs
+```
+
+### Building in a container
+
+Building in a container is simpler, but more restrictive:
+
+- It requires the `podman` command and the ability to run Linux containers.
+- The created executable is a Linux executable, and depends on dynamic libraries
+  which may only be available only in a container of a similar Linux
+  distribution.
+
+```bash
+$ make binary
 ```
 
 ### Installation
@@ -161,5 +257,5 @@ $ make docs
 Finally, after the binary and documentation is built:
 
 ```bash
-$ sudo make install
+sudo make install
 ```

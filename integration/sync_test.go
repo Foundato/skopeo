@@ -11,8 +11,24 @@ import (
 	"strings"
 
 	"github.com/containers/image/v5/docker"
+	"github.com/containers/image/v5/docker/reference"
 	"github.com/containers/image/v5/types"
 	"github.com/go-check/check"
+)
+
+const (
+	// A repository with a path with multiple components in it which
+	// contains multiple tags, preferably with some tags pointing to
+	// manifest lists, and with some tags that don't.
+	pullableRepo = "k8s.gcr.io/coredns/coredns"
+	// A tagged image in the repository that we can inspect and copy.
+	pullableTaggedImage = "k8s.gcr.io/coredns/coredns:v1.6.6"
+	// A tagged manifest list in the repository that we can inspect and copy.
+	pullableTaggedManifestList = "k8s.gcr.io/coredns/coredns:v1.8.0"
+	// A repository containing multiple tags, some of which are for
+	// manifest lists, and which includes a "latest" tag.  We specify the
+	// name here without a tag.
+	pullableRepoWithLatestTag = "k8s.gcr.io/pause"
 )
 
 func init() {
@@ -94,8 +110,8 @@ func (s *SyncSuite) TestDocker2DirTagged(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
-	image := "busybox:latest"
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
+	image := pullableTaggedImage
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
 	imagePath := imageRef.DockerReference().String()
@@ -117,9 +133,37 @@ func (s *SyncSuite) TestDocker2DirTagged(c *check.C) {
 	c.Assert(out, check.Equals, "")
 }
 
+func (s *SyncSuite) TestDocker2DirTaggedAll(c *check.C) {
+	tmpDir, err := ioutil.TempDir("", "skopeo-sync-test")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tmpDir)
+
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
+	image := pullableTaggedManifestList
+	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
+	c.Assert(err, check.IsNil)
+	imagePath := imageRef.DockerReference().String()
+
+	dir1 := path.Join(tmpDir, "dir1")
+	dir2 := path.Join(tmpDir, "dir2")
+
+	// sync docker => dir
+	assertSkopeoSucceeds(c, "", "sync", "--all", "--scoped", "--src", "docker", "--dest", "dir", image, dir1)
+	_, err = os.Stat(path.Join(dir1, imagePath, "manifest.json"))
+	c.Assert(err, check.IsNil)
+
+	// copy docker => dir
+	assertSkopeoSucceeds(c, "", "copy", "--all", "docker://"+image, "dir:"+dir2)
+	_, err = os.Stat(path.Join(dir2, "manifest.json"))
+	c.Assert(err, check.IsNil)
+
+	out := combinedOutputOfCommand(c, "diff", "-urN", path.Join(dir1, imagePath), dir2)
+	c.Assert(out, check.Equals, "")
+}
+
 func (s *SyncSuite) TestScoped(c *check.C) {
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
-	image := "busybox:latest"
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
+	image := pullableTaggedImage
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
 	imagePath := imageRef.DockerReference().String()
@@ -127,7 +171,7 @@ func (s *SyncSuite) TestScoped(c *check.C) {
 	dir1, err := ioutil.TempDir("", "skopeo-sync-test")
 	c.Assert(err, check.IsNil)
 	assertSkopeoSucceeds(c, "", "sync", "--src", "docker", "--dest", "dir", image, dir1)
-	_, err = os.Stat(path.Join(dir1, image, "manifest.json"))
+	_, err = os.Stat(path.Join(dir1, path.Base(imagePath), "manifest.json"))
 	c.Assert(err, check.IsNil)
 
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "docker", "--dest", "dir", image, dir1)
@@ -138,30 +182,30 @@ func (s *SyncSuite) TestScoped(c *check.C) {
 }
 
 func (s *SyncSuite) TestDirIsNotOverwritten(c *check.C) {
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
-	image := "busybox:latest"
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
+	image := pullableRepoWithLatestTag
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
 	imagePath := imageRef.DockerReference().String()
 
 	// make a copy of the image in the local registry
-	assertSkopeoSucceeds(c, "", "copy", "--dest-tls-verify=false", "docker://"+image, "docker://"+path.Join(v2DockerRegistryURL, image))
+	assertSkopeoSucceeds(c, "", "copy", "--dest-tls-verify=false", "docker://"+image, "docker://"+path.Join(v2DockerRegistryURL, reference.Path(imageRef.DockerReference())))
 
 	//sync upstream image to dir, not scoped
 	dir1, err := ioutil.TempDir("", "skopeo-sync-test")
 	c.Assert(err, check.IsNil)
 	assertSkopeoSucceeds(c, "", "sync", "--src", "docker", "--dest", "dir", image, dir1)
-	_, err = os.Stat(path.Join(dir1, image, "manifest.json"))
+	_, err = os.Stat(path.Join(dir1, path.Base(imagePath), "manifest.json"))
 	c.Assert(err, check.IsNil)
 
 	//sync local registry image to dir, not scoped
-	assertSkopeoFails(c, ".*Refusing to overwrite destination directory.*", "sync", "--src-tls-verify=false", "--src", "docker", "--dest", "dir", path.Join(v2DockerRegistryURL, image), dir1)
+	assertSkopeoFails(c, ".*Refusing to overwrite destination directory.*", "sync", "--src-tls-verify=false", "--src", "docker", "--dest", "dir", path.Join(v2DockerRegistryURL, reference.Path(imageRef.DockerReference())), dir1)
 
 	//sync local registry image to dir, scoped
-	imageRef, err = docker.ParseReference(fmt.Sprintf("//%s", path.Join(v2DockerRegistryURL, image)))
+	imageRef, err = docker.ParseReference(fmt.Sprintf("//%s", path.Join(v2DockerRegistryURL, reference.Path(imageRef.DockerReference()))))
 	c.Assert(err, check.IsNil)
 	imagePath = imageRef.DockerReference().String()
-	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src-tls-verify=false", "--src", "docker", "--dest", "dir", path.Join(v2DockerRegistryURL, image), dir1)
+	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src-tls-verify=false", "--src", "docker", "--dest", "dir", path.Join(v2DockerRegistryURL, reference.Path(imageRef.DockerReference())), dir1)
 	_, err = os.Stat(path.Join(dir1, imagePath, "manifest.json"))
 	c.Assert(err, check.IsNil)
 	os.RemoveAll(dir1)
@@ -173,8 +217,8 @@ func (s *SyncSuite) TestDocker2DirUntagged(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
-	image := "alpine"
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
+	image := pullableRepo
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
 	imagePath := imageRef.DockerReference().String()
@@ -198,7 +242,7 @@ func (s *SyncSuite) TestYamlUntagged(c *check.C) {
 	defer os.RemoveAll(tmpDir)
 	dir1 := path.Join(tmpDir, "dir1")
 
-	image := "alpine"
+	image := pullableRepo
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
 	imagePath := imageRef.DockerReference().Name()
@@ -209,23 +253,22 @@ func (s *SyncSuite) TestYamlUntagged(c *check.C) {
 	c.Check(len(tags), check.Not(check.Equals), 0)
 
 	yamlConfig := fmt.Sprintf(`
-docker.io:
+%s:
   images:
-    %s:
-`, image)
+    %s: []
+`, reference.Domain(imageRef.DockerReference()), reference.Path(imageRef.DockerReference()))
 
-	//sync to the local reg
+	// sync to the local registry
 	yamlFile := path.Join(tmpDir, "registries.yaml")
 	ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "docker", "--dest-tls-verify=false", yamlFile, v2DockerRegistryURL)
-	// sync back from local reg to a folder
+	// sync back from local registry to a folder
 	os.Remove(yamlFile)
 	yamlConfig = fmt.Sprintf(`
 %s:
   tls-verify: false
   images:
-    %s:
-
+    %s: []
 `, v2DockerRegistryURL, imagePath)
 
 	ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
@@ -234,7 +277,9 @@ docker.io:
 	sysCtx = types.SystemContext{
 		DockerInsecureSkipTLSVerify: types.NewOptionalBool(true),
 	}
-	localTags, err := docker.GetRepositoryTags(context.Background(), &sysCtx, imageRef)
+	localImageRef, err := docker.ParseReference(fmt.Sprintf("//%s/%s", v2DockerRegistryURL, imagePath))
+	c.Assert(err, check.IsNil)
+	localTags, err := docker.GetRepositoryTags(context.Background(), &sysCtx, localImageRef)
 	c.Assert(err, check.IsNil)
 	c.Check(len(localTags), check.Not(check.Equals), 0)
 	c.Assert(len(localTags), check.Equals, len(tags))
@@ -262,9 +307,9 @@ func (s *SyncSuite) TestYamlRegex2Dir(c *check.C) {
 	dir1 := path.Join(tmpDir, "dir1")
 
 	yamlConfig := `
-docker.io:
+k8s.gcr.io:
   images-by-tag-regex:
-    nginx: ^1\.13\.[12]-alpine-perl$  # regex string test
+    pause: ^[12]\.0$  # regex string test
 `
 	// the       ↑    regex strings always matches only 2 images
 	var nTags = 2
@@ -289,6 +334,37 @@ docker.io:
 	c.Assert(nManifests, check.Equals, nTags)
 }
 
+func (s *SyncSuite) TestYamlDigest2Dir(c *check.C) {
+	tmpDir, err := ioutil.TempDir("", "skopeo-sync-test")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tmpDir)
+	dir1 := path.Join(tmpDir, "dir1")
+
+	yamlConfig := `
+k8s.gcr.io:
+  images:
+    pause:
+    - sha256:59eec8837a4d942cc19a52b8c09ea75121acc38114a2c68b98983ce9356b8610
+`
+	yamlFile := path.Join(tmpDir, "registries.yaml")
+	ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "dir", yamlFile, dir1)
+
+	nManifests := 0
+	err = filepath.Walk(dir1, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && info.Name() == "manifest.json" {
+			nManifests++
+			return filepath.SkipDir
+		}
+		return nil
+	})
+	c.Assert(err, check.IsNil)
+	c.Assert(nManifests, check.Equals, 1)
+}
+
 func (s *SyncSuite) TestYaml2Dir(c *check.C) {
 	tmpDir, err := ioutil.TempDir("", "skopeo-sync-test")
 	c.Assert(err, check.IsNil)
@@ -296,21 +372,21 @@ func (s *SyncSuite) TestYaml2Dir(c *check.C) {
 	dir1 := path.Join(tmpDir, "dir1")
 
 	yamlConfig := `
-docker.io:
+k8s.gcr.io:
   images:
-    busybox:
-      - latest
-      - musl
-    alpine:
-      - edge
-      - 3.8
-    opensuse/leap:
+    coredns/coredns:
+      - v1.8.0
+      - v1.7.1
+    k8s-dns-kube-dns:
+      - 1.14.12
+      - 1.14.13
+    pause:
       - latest
 
 quay.io:
   images:
-      quay/busybox:
-          - latest`
+    quay/busybox:
+      - latest`
 
 	// get the number of tags
 	re := regexp.MustCompile(`^ +- +[^:/ ]+`)
@@ -347,10 +423,10 @@ func (s *SyncSuite) TestYamlTLSVerify(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 	dir1 := path.Join(tmpDir, "dir1")
-	image := "busybox"
+	image := pullableRepoWithLatestTag
 	tag := "latest"
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	// copy docker => docker
 	assertSkopeoSucceeds(c, "", "copy", "--dest-tls-verify=false", "docker://"+image+":"+tag, localRegURL+image+":"+tag)
 
@@ -403,8 +479,8 @@ func (s *SyncSuite) TestDocker2DockerTagged(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
-	image := "busybox:latest"
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
+	image := pullableTaggedImage
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
 	imagePath := imageRef.DockerReference().String()
@@ -436,14 +512,18 @@ func (s *SyncSuite) TestDir2DockerTagged(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
-	image := "busybox:latest"
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
+	image := pullableRepoWithLatestTag
 
 	dir1 := path.Join(tmpDir, "dir1")
 	err = os.Mkdir(dir1, 0755)
 	c.Assert(err, check.IsNil)
 	dir2 := path.Join(tmpDir, "dir2")
 	err = os.Mkdir(dir2, 0755)
+	c.Assert(err, check.IsNil)
+
+	// create leading dirs
+	err = os.MkdirAll(path.Dir(path.Join(dir1, image)), 0755)
 	c.Assert(err, check.IsNil)
 
 	// copy docker => dir
@@ -454,9 +534,13 @@ func (s *SyncSuite) TestDir2DockerTagged(c *check.C) {
 	// sync dir => docker
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--dest-tls-verify=false", "--src", "dir", "--dest", "docker", dir1, v2DockerRegistryURL)
 
+	// create leading dirs
+	err = os.MkdirAll(path.Dir(path.Join(dir2, image)), 0755)
+	c.Assert(err, check.IsNil)
+
 	// copy docker => dir
 	assertSkopeoSucceeds(c, "", "copy", "--src-tls-verify=false", localRegURL+image, "dir:"+path.Join(dir2, image))
-	_, err = os.Stat(path.Join(path.Join(dir2, image), "manifest.json"))
+	_, err = os.Stat(path.Join(dir2, image, "manifest.json"))
 	c.Assert(err, check.IsNil)
 
 	out := combinedOutputOfCommand(c, "diff", "-urN", dir1, dir2)
@@ -519,7 +603,7 @@ func (s *SyncSuite) TestFailsWithDockerSourceUnauthorized(c *check.C) {
 }
 
 func (s *SyncSuite) TestFailsWithDockerSourceNotExisting(c *check.C) {
-	repo := path.Join(v2DockerRegistryURL, "imagedoesdotexist")
+	repo := path.Join(v2DockerRegistryURL, "imagedoesnotexist")
 	tmpDir, err := ioutil.TempDir("", "skopeo-sync-test")
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
