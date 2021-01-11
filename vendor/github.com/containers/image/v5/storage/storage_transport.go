@@ -199,8 +199,14 @@ func (s *storageTransport) GetStore() (storage.Store, error) {
 		if err != nil {
 			return nil, err
 		}
-		options.UIDMap = s.defaultUIDMap
-		options.GIDMap = s.defaultGIDMap
+		// Only override mappings with default if no mappings are specified
+		if len(options.UIDMap) == 0 {
+			options.UIDMap = s.defaultUIDMap
+		}
+		if len(options.GIDMap) == 0 {
+			options.GIDMap = s.defaultGIDMap
+		}
+		// Get store with loaded configs
 		store, err := storage.GetStore(options)
 		if err != nil {
 			return nil, err

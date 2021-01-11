@@ -183,19 +183,17 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) error {
 		decConfig = cc.DecryptConfig
 	}
 
-	return retry.RetryIfNecessary(ctx, func() error {
-		_, err = copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
-			RemoveSignatures:      opts.removeSignatures,
-			SignBy:                opts.signByFingerprint,
-			ReportWriter:          stdout,
-			SourceCtx:             sourceCtx,
-			DestinationCtx:        destinationCtx,
-			ForceManifestMIMEType: manifestType,
-			ImageListSelection:    imageListSelection,
-			OciDecryptConfig:      decConfig,
-			OciEncryptLayers:      encLayers,
-			OciEncryptConfig:      encConfig,
-		})
-		return err
-	}, opts.retryOpts)
+	_, err = copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
+		RemoveSignatures:      opts.removeSignatures,
+		SignBy:                opts.signByFingerprint,
+		ReportWriter:          stdout,
+		SourceCtx:             sourceCtx,
+		DestinationCtx:        destinationCtx,
+		ForceManifestMIMEType: manifestType,
+		ImageListSelection:    imageListSelection,
+		OciDecryptConfig:      decConfig,
+		OciEncryptLayers:      encLayers,
+		OciEncryptConfig:      encConfig,
+	})
+	return err
 }

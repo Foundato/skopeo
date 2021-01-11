@@ -3,15 +3,19 @@ module github.com/containers/skopeo
 go 1.12
 
 require (
+	github.com/14rcole/gopopulate v0.0.0-20180821133914-b175b219e774 // indirect
 	github.com/containers/common v0.33.0
 	github.com/containers/image/v5 v5.9.0
 	github.com/containers/ocicrypt v1.0.3
 	github.com/containers/storage v1.24.5
 	github.com/containers/tar-diff v0.1.2
 	github.com/docker/docker v17.12.0-ce-rc1.0.20201020191947-73dc6a680cdd+incompatible
+	github.com/docker/go-metrics v0.0.1 // indirect
+	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/go-check/check v0.0.0-20180628173108-788fd7840127
 	github.com/moby/term v0.0.0-20201110203204-bea5bbe245bf // indirect
+	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/opencontainers/image-tools v0.0.0-20170926011501-6d941547fa1d
@@ -29,6 +33,6 @@ require (
 )
 
 // Temporary use the wip/deltas branch
-replace github.com/containers/image/v5 => github.com/Foundato/image/v5 v5.4.5-0.20210111131918-875ee8c148d8
+replace github.com/containers/image/v5 => github.com/Foundato/image/v5 v5.4.5-0.20210201172353-7cf7a8938dd5
 
 replace github.com/containers/tar-diff => github.com/Foundato/tar-diff v0.1.2

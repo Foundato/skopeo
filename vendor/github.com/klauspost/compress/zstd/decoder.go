@@ -426,19 +426,6 @@ func (d *Decoder) Close() {
 	d.current.err = ErrDecoderClosed
 }
 
-// RegisterDict will load a dictionary
-func (d *Decoder) RegisterDict(b []byte) error {
-	dc, err := loadDict(b)
-	if err != nil {
-		return err
-	}
-	if d.dicts == nil {
-		d.dicts = make(map[uint32]dict, 1)
-	}
-	d.dicts[dc.id] = *dc
-	return nil
-}
-
 // IOReadCloser returns the decoder as an io.ReadCloser for convenience.
 // Any changes to the decoder will be reflected, so the returned ReadCloser
 // can be reused along with the decoder.
