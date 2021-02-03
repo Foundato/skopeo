@@ -51,7 +51,7 @@ github.com/containers/common/pkg/completion
 github.com/containers/common/pkg/report
 github.com/containers/common/pkg/report/camelcase
 github.com/containers/common/pkg/retry
-# github.com/containers/image/v5 v5.9.0 => github.com/Foundato/image/v5 v5.4.5-0.20210201172353-7cf7a8938dd5
+# github.com/containers/image/v5 v5.9.0 => github.com/Foundato/image/v5 v5.4.5-0.20210201094154-3dd6204916fa
 github.com/containers/image/v5/copy
 github.com/containers/image/v5/directory
 github.com/containers/image/v5/directory/explicitfilepath

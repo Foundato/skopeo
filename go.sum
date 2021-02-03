@@ -18,8 +18,8 @@ github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78/go.mod h1:LmzpDX
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/Foundato/image/v5 v5.4.5-0.20210201172353-7cf7a8938dd5 h1:0yx7f+BL7Qde53KpVVesIe+NtLO28J7UhunnDBIHoUg=
-github.com/Foundato/image/v5 v5.4.5-0.20210201172353-7cf7a8938dd5/go.mod h1:1MSooDNVUw6bOxMzoCUPIVP4r1i8JVpBVWwdEE70E6I=
+github.com/Foundato/image/v5 v5.4.5-0.20210201094154-3dd6204916fa h1:WueLzSKlgolEiyzeyz+6/yvmx7HSxLTGReQo92Ag8uQ=
+github.com/Foundato/image/v5 v5.4.5-0.20210201094154-3dd6204916fa/go.mod h1:1MSooDNVUw6bOxMzoCUPIVP4r1i8JVpBVWwdEE70E6I=
 github.com/Foundato/tar-diff v0.1.2 h1:sod9dlzmYkfkejsH+WRfIfpHM2tHao4n/1ASaWUajg0=
 github.com/Foundato/tar-diff v0.1.2/go.mod h1:9/tnBUlqmoW1bz83CQAW9wC+EQCH+h1Wn8uq3VxLbMc=
 github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 h1:ygIc8M6trr62pF5DucadTWGdEB4mEyvzi0e2nbcmcyA=

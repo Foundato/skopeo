@@ -33,6 +33,6 @@ require (
 )
 
 // Temporary use the wip/deltas branch
-replace github.com/containers/image/v5 => github.com/Foundato/image/v5 v5.4.5-0.20210201172353-7cf7a8938dd5
+replace github.com/containers/image/v5 => github.com/Foundato/image/v5 v5.4.5-0.20210201094154-3dd6204916fa
 
 replace github.com/containers/tar-diff => github.com/Foundato/tar-diff v0.1.2

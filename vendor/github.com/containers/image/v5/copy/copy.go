@@ -1096,7 +1096,8 @@ func (ic *imageCopier) resolveDeltaLayer(ctx context.Context, matchingDeltas []*
 		if dataSource == nil {
 			continue // from layer doesn't exist
 		}
-		fmt.Printf("Using delta %v for DiffID %v\n", matchingDelta.Digest, fromDigest)
+
+		logrus.Debugf("Using delta %v for DiffID %v", matchingDelta.Digest, fromDigest)
 
 		deltaStream, _, err := ic.c.rawSource.GetBlob(ctx, *matchingDelta, ic.c.blobInfoCache)
 		if err != nil {
