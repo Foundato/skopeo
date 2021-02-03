@@ -51,7 +51,7 @@ mkdir $HOME/.skopeo
 All copy tasks need to be run with sudo privileges. Otherwise the command will fail silently without exiting!
 ```bash
 # Initial image (no deltas yet)
-sudo ./skopeo.linux.amd64 copy docker://dseifert/go-echo:0.2.0 containers-storage:go-echo:0.2.0
+sudo ./skopeo.linux.amd64 copy docker://dseifert/go-echo:0.1.0 containers-storage:go-echo:0.1.0
 
 # Upgrade (v1 -> v2) where delta will be used
 sudo ./skopeo.linux.amd64 copy docker://dseifert/go-echo:0.2.0 containers-storage:go-echo:0.2.0
