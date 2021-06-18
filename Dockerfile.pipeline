@@ -1,0 +1,22 @@
+# Build step
+FROM golang:1.14-buster as builder
+
+RUN apt-get update && apt-get install -y libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev
+
+ENV GOPATH=/
+WORKDIR /src/github.com/containers/skopeo
+COPY ./ /src/github.com/containers/skopeo
+RUN make bin/skopeo.linux.amd64
+
+
+# Execution container
+FROM ubuntu:20.04
+
+RUN apt-get update && apt-get install -y libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev ca-certificates
+RUN update-ca-certificates
+COPY --from=builder /src/github.com/containers/skopeo/bin/skopeo.linux.amd64 /usr/local/bin/skopeo
+COPY ./default-policy.json /etc/containers/policy.json
+COPY ./default-storage.conf /etc/containers/storage.conf
+
+ENTRYPOINT ["skopeo"]
+
